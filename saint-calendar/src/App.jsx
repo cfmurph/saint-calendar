@@ -6,6 +6,16 @@ import FeastModal from './components/FeastModal'
 import { FIXED_FEASTS } from './data/feasts'
 import { getMoveableFeasts } from './data/moveable'
 
+/** 1962 rank precedence for sorting (lower = higher precedence) */
+const RANK_ORDER = {
+  'class-1': 0,
+  'class-2': 1,
+  'vigil': 2,
+  'class-3': 3,
+  'privileged-feria': 4,
+  'commemoration': 5,
+}
+
 export default function App() {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
@@ -13,7 +23,6 @@ export default function App() {
   const [country, setCountry] = useState('ALL')
   const [selectedFeast, setSelectedFeast] = useState(null)
 
-  // Merge fixed and moveable feasts for the current year, keyed by day of month
   const feastsByDay = useMemo(() => {
     const moveableFeasts = getMoveableFeasts(year)
     const allFeasts = [...FIXED_FEASTS, ...moveableFeasts]
@@ -28,17 +37,16 @@ export default function App() {
       byDay[feast.day].push(feast)
     }
 
-    // Sort each day's feasts: solemnities first, then feasts, memorials, etc.
-    const order = { solemnity: 0, feast: 1, memorial: 2, 'optional-memorial': 3, commemoration: 4 }
+    // Sort each day's feasts by 1962 rank precedence
     for (const day of Object.keys(byDay)) {
-      byDay[day].sort((a, b) => (order[a.type] ?? 9) - (order[b.type] ?? 9))
+      byDay[day].sort((a, b) => (RANK_ORDER[a.rank] ?? 9) - (RANK_ORDER[b.rank] ?? 9))
     }
 
     return byDay
   }, [year, month])
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-stone-100">
       <Header
         year={year}
         month={month}
@@ -49,7 +57,6 @@ export default function App() {
       />
 
       <main className="max-w-7xl mx-auto lg:flex lg:gap-0">
-        {/* Calendar takes up the bulk of the space */}
         <div className="flex-1 min-w-0">
           <CalendarGrid
             year={year}
@@ -60,7 +67,6 @@ export default function App() {
           />
         </div>
 
-        {/* Sidebar feast list */}
         <FeastList
           month={month}
           feastsByDay={feastsByDay}
@@ -69,7 +75,6 @@ export default function App() {
         />
       </main>
 
-      {/* Detail modal */}
       {selectedFeast && (
         <FeastModal
           feast={selectedFeast}
